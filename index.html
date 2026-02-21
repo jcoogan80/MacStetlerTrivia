@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sports Champion Trivia</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #0a0a1a;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, #1a0a3a 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, #0a2a1a 0%, transparent 60%),
+                radial-gradient(ellipse at 60% 80%, #1a1a0a 0%, transparent 60%);
+    z-index: 0;
+  }
+
+  .container { position: relative; z-index: 1; width: 90%; max-width: 720px; }
+
+  .screen { display: none; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+
+  .logo {
+    font-size: 2.8rem;
+    font-weight: 900;
+    text-align: center;
+    background: linear-gradient(135deg, #f7c948, #ff6b35, #e63946);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -1px;
+  }
+  .subtitle { color: #aaa; font-size: 1rem; text-align: center; }
+
+  .card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    padding: 28px;
+    width: 100%;
+    backdrop-filter: blur(10px);
+  }
+
+  .sport-btns { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  .sport-btn {
+    flex: 1; min-width: 130px;
+    padding: 22px 10px;
+    border-radius: 16px;
+    border: 2px solid transparent;
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all .2s;
+    text-align: center;
+  }
+  .sport-btn span { display: block; font-size: 0.8rem; margin-top: 6px; color: #bbb; }
+  .sport-btn:hover, .sport-btn.selected {
+    border-color: #f7c948;
+    background: rgba(247,201,72,0.15);
+    transform: scale(1.05);
+  }
+
+  .diff-btns { display: flex; gap: 10px; justify-content: center; }
+  .diff-btn {
+    padding: 12px 28px;
+    border-radius: 30px;
+    border: 2px solid rgba(255,255,255,0.2);
+    background: transparent;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .diff-btn:hover, .diff-btn.selected { transform: scale(1.05); }
+  .diff-btn.easy { border-color: #2ecc71; }
+  .diff-btn.easy:hover, .diff-btn.easy.selected { background: #2ecc71; color: #000; }
+  .diff-btn.medium { border-color: #f7c948; }
+  .diff-btn.medium:hover, .diff-btn.medium.selected { background: #f7c948; color: #000; }
+  .diff-btn.hard { border-color: #e63946; }
+  .diff-btn.hard:hover, .diff-btn.hard.selected { background: #e63946; color: #fff; }
+
+  .start-btn {
+    padding: 18px 60px;
+    background: linear-gradient(135deg, #f7c948, #ff6b35);
+    border: none;
+    border-radius: 50px;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #000;
+    cursor: pointer;
+    transition: all .2s;
+    letter-spacing: 1px;
+  }
+  .start-btn:hover { transform: scale(1.05); box-shadow: 0 8px 30px rgba(247,201,72,0.4); }
+
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .hud-box {
+    background: rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 12px 20px;
+    text-align: center;
+    flex: 1;
+    min-width: 80px;
+  }
+  .hud-label { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+  .hud-val { font-size: 1.4rem; font-weight: 800; color: #f7c948; }
+
+  .timer-wrap { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+  .timer-bar { height: 100%; border-radius: 4px; transition: width 1s linear, background .5s; background: #2ecc71; }
+
+  .sport-badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .badge-basketball { background: rgba(255,107,53,0.3); color: #ff6b35; border: 1px solid #ff6b35; }
+  .badge-football   { background: rgba(139,90,43,0.3);  color: #c8873a; border: 1px solid #c8873a; }
+  .badge-soccer     { background: rgba(46,204,113,0.3); color: #2ecc71; border: 1px solid #2ecc71; }
+
+  .q-text { font-size: 1.25rem; font-weight: 700; line-height: 1.4; }
+
+  .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+  .ans-btn {
+    padding: 18px 14px;
+    border-radius: 14px;
+    border: 2px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.06);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+    text-align: left;
+    line-height: 1.3;
+  }
+  .ans-btn:hover:not(:disabled) {
+    border-color: #f7c948;
+    background: rgba(247,201,72,0.1);
+    transform: translateY(-2px);
+  }
+  .ans-btn.correct { border-color: #2ecc71 !important; background: rgba(46,204,113,0.25) !important; }
+  .ans-btn.wrong   { border-color: #e63946 !important; background: rgba(230,57,70,0.25)  !important; }
+  .ans-btn:disabled { cursor: default; }
+
+  .feedback {
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    min-height: 30px;
+    transition: all .3s;
+  }
+  .feedback.correct { color: #2ecc71; }
+  .feedback.wrong   { color: #e63946; }
+
+  .streak-badge {
+    display: none;
+    padding: 8px 20px;
+    background: linear-gradient(135deg, #f7c948, #ff6b35);
+    border-radius: 30px;
+    font-weight: 800;
+    color: #000;
+    font-size: 0.95rem;
+    animation: pop .3s ease;
+  }
+  @keyframes pop {
+    0%   { transform: scale(0.5); opacity: 0; }
+    80%  { transform: scale(1.1); }
+    100% { transform: scale(1);   opacity: 1; }
+  }
+
+  .progress-dots { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+  .dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    transition: background .3s;
+  }
+  .dot.correct { background: #2ecc71; }
+  .dot.wrong   { background: #e63946; }
+
+  .trophy { font-size: 5rem; text-align: center; animation: bounce 1s infinite alternate; }
+  @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-12px); } }
+
+  .final-score { font-size: 3.5rem; font-weight: 900; color: #f7c948; text-align: center; }
+  .final-label { color: #aaa; font-size: 1rem; text-align: center; }
+  .final-msg   { text-align: center; font-size: 1.1rem; line-height: 1.5; color: #ddd; }
+
+  .grade-bar  { width: 100%; height: 16px; background: rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; }
+  .grade-fill { height: 100%; border-radius: 8px; background: linear-gradient(90deg, #2ecc71, #f7c948); transition: width 1s ease; }
+
+  .stat-row { display: flex; justify-content: space-between; color: #aaa; font-size: 0.95rem; }
+  .stat-row span:last-child { color: #fff; font-weight: 700; }
+
+  .play-again {
+    padding: 16px 50px;
+    background: linear-gradient(135deg, #f7c948, #ff6b35);
+    border: none; border-radius: 50px;
+    font-size: 1.1rem; font-weight: 800;
+    color: #000; cursor: pointer;
+    transition: all .2s;
+  }
+  .play-again:hover { transform: scale(1.05); box-shadow: 0 8px 30px rgba(247,201,72,0.4); }
+
+  @media (max-width: 500px) {
+    .answers { grid-template-columns: 1fr; }
+    .logo { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ══ START SCREEN ══ -->
+  <div class="screen active" id="startScreen">
+    <div class="logo">🏆 Sports Champion</div>
+    <div class="subtitle">The Ultimate Sports Trivia Challenge</div>
+
+    <div class="card">
+      <div style="text-align:center;margin-bottom:16px;font-weight:700;color:#f7c948">Pick Your Sport</div>
+      <div class="sport-btns">
+        <button class="sport-btn" data-sport="basketball">🏀<span>Basketball</span></button>
+        <button class="sport-btn" data-sport="football">🏈<span>Football</span></button>
+        <button class="sport-btn" data-sport="soccer">⚽<span>Soccer</span></button>
+        <button class="sport-btn selected" data-sport="all">🎯<span>All Sports</span></button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="text-align:center;margin-bottom:16px;font-weight:700;color:#f7c948">Difficulty</div>
+      <div class="diff-btns">
+        <button class="diff-btn easy"           data-diff="easy">Easy</button>
+        <button class="diff-btn medium selected" data-diff="medium">Medium</button>
+        <button class="diff-btn hard"            data-diff="hard">Hard</button>
+      </div>
+    </div>
+
+    <button class="start-btn" id="startBtn">🚀 LET'S GO!</button>
+    <div style="color:#666;font-size:0.85rem;text-align:center">10 questions · click to answer · single hand friendly</div>
+  </div>
+
+  <!-- ══ GAME SCREEN ══ -->
+  <div class="screen" id="gameScreen">
+    <div class="hud">
+      <div class="hud-box"><div class="hud-label">Score</div><div class="hud-val" id="scoreVal">0</div></div>
+      <div class="hud-box"><div class="hud-label">Streak 🔥</div><div class="hud-val" id="streakVal">0</div></div>
+      <div class="hud-box"><div class="hud-label">Question</div><div class="hud-val" id="qNumVal">1/10</div></div>
+    </div>
+
+    <div class="timer-wrap"><div class="timer-bar" id="timerBar"></div></div>
+
+    <div class="card" id="questionCard">
+      <div id="sportBadge" class="sport-badge"></div>
+      <div class="q-text" id="qText"></div>
+    </div>
+
+    <div class="answers" id="answersGrid"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="streak-badge" id="streakBadge"></div>
+    <div class="progress-dots" id="progressDots"></div>
+  </div>
+
+  <!-- ══ END SCREEN ══ -->
+  <div class="screen" id="endScreen">
+    <div class="trophy" id="trophyEmoji">🏆</div>
+    <div class="final-score" id="finalScore">0</div>
+    <div class="final-label">points</div>
+
+    <div class="card" style="gap:14px;display:flex;flex-direction:column">
+      <div class="grade-bar"><div class="grade-fill" id="gradeFill" style="width:0%"></div></div>
+      <div class="stat-row"><span>Correct Answers</span><span id="statCorrect">0/10</span></div>
+      <div class="stat-row"><span>Best Streak 🔥</span><span id="statStreak">0</span></div>
+      <div class="stat-row"><span>Accuracy</span><span id="statAccuracy">0%</span></div>
+      <div class="final-msg" id="finalMsg"></div>
+    </div>
+
+    <button class="play-again" id="playAgain">🔄 Play Again</button>
+  </div>
+
+</div>
+
+<script>
+  const QUESTIONS = {
+    basketball: [
+      { q:"How many points is a three-pointer worth?", a:["3","2","4","1"], correct:0, diff:"easy" },
+      { q:"How many players are on the court per team in basketball?", a:["5","6","4","7"], correct:0, diff:"easy" },
+      { q:"Which team did LeBron James win his first NBA championship with?", a:["Miami Heat","Cleveland Cavaliers","Los Angeles Lakers","Chicago Bulls"], correct:0, diff:"easy" },
+      { q:"What city do the Golden State Warriors play in?", a:["San Francisco","Los Angeles","Oakland","Sacramento"], correct:0, diff:"easy" },
+      { q:"What is the shot clock time limit in NBA basketball?", a:["24 seconds","30 seconds","20 seconds","35 seconds"], correct:0, diff:"easy" },
+      { q:"Who holds the NBA record for most points scored in a single game?", a:["Wilt Chamberlain","Kobe Bryant","LeBron James","Michael Jordan"], correct:0, diff:"medium" },
+      { q:"How tall is a regulation NBA basketball hoop?", a:["10 feet","9 feet","11 feet","12 feet"], correct:0, diff:"medium" },
+      { q:"Which player is nicknamed 'The Greek Freak'?", a:["Giannis Antetokounmpo","Nikola Jokic","Luka Doncic","Kristaps Porzingis"], correct:0, diff:"medium" },
+      { q:"How many championships did Michael Jordan win with the Chicago Bulls?", a:["6","5","4","7"], correct:0, diff:"medium" },
+      { q:"Which team has won the most NBA championships?", a:["Boston Celtics","Los Angeles Lakers","Chicago Bulls","Golden State Warriors"], correct:0, diff:"medium" },
+      { q:"How many points did Wilt Chamberlain score in his famous 100-point game?", a:["100","98","102","95"], correct:0, diff:"hard" },
+      { q:"What year was the NBA founded?", a:["1946","1950","1940","1955"], correct:0, diff:"hard" },
+      { q:"Which player won the first NBA Slam Dunk contest in 1976?", a:["Julius Erving","David Thompson","Artis Gilmore","George Gervin"], correct:0, diff:"hard" },
+      { q:"Stephen Curry set the single-season three-pointer record in 2015-16 with how many threes?", a:["402","387","368","415"], correct:0, diff:"hard" },
+      { q:"Which country won the first Olympic men's basketball gold medal in 1936?", a:["United States","Canada","Soviet Union","Brazil"], correct:0, diff:"hard" },
+    ],
+    football: [
+      { q:"How many points does a touchdown score?", a:["6","7","8","5"], correct:0, diff:"easy" },
+      { q:"How many players does each team have on the field in American football?", a:["11","12","10","9"], correct:0, diff:"easy" },
+      { q:"Who won Super Bowl LVIII in 2024?", a:["Kansas City Chiefs","San Francisco 49ers","Baltimore Ravens","Buffalo Bills"], correct:0, diff:"easy" },
+      { q:"How many downs does an offense get to move 10 yards?", a:["4","3","5","6"], correct:0, diff:"easy" },
+      { q:"What does NFL stand for?", a:["National Football League","National Field League","North Football League","National Finals League"], correct:0, diff:"easy" },
+      { q:"Which QB has won the most Super Bowls?", a:["Tom Brady","Joe Montana","Terry Bradshaw","Patrick Mahomes"], correct:0, diff:"medium" },
+      { q:"How long is an NFL football field (end zone to end zone)?", a:["100 yards","110 yards","120 yards","90 yards"], correct:0, diff:"medium" },
+      { q:"What is the name of the trophy awarded to the Super Bowl winner?", a:["Vince Lombardi Trophy","George Halas Trophy","Pete Rozelle Trophy","Walter Payton Trophy"], correct:0, diff:"medium" },
+      { q:"Which team plays their home games at Lambeau Field?", a:["Green Bay Packers","Chicago Bears","Minnesota Vikings","Detroit Lions"], correct:0, diff:"medium" },
+      { q:"How many points is a safety worth?", a:["2","1","3","6"], correct:0, diff:"medium" },
+      { q:"Who holds the NFL record for most career passing touchdowns?", a:["Tom Brady","Peyton Manning","Drew Brees","Brett Favre"], correct:0, diff:"hard" },
+      { q:"What was the score of the highest-scoring Super Bowl ever?", a:["55-10","49-26","43-8","41-33"], correct:0, diff:"hard" },
+      { q:"Which player holds the NFL single-season rushing touchdown record with 28?", a:["LaDainian Tomlinson","Emmitt Smith","Barry Sanders","Marcus Allen"], correct:0, diff:"hard" },
+      { q:"In what city was the first Super Bowl played?", a:["Los Angeles","New Orleans","Miami","Green Bay"], correct:0, diff:"hard" },
+      { q:"What team drafted Patrick Mahomes with the 10th overall pick in 2017?", a:["Kansas City Chiefs","Dallas Cowboys","New England Patriots","Pittsburgh Steelers"], correct:0, diff:"hard" },
+    ],
+    soccer: [
+      { q:"How many players are on the field per team in soccer?", a:["11","10","12","9"], correct:0, diff:"easy" },
+      { q:"How long is a standard soccer match?", a:["90 minutes","80 minutes","100 minutes","60 minutes"], correct:0, diff:"easy" },
+      { q:"Which country has won the most FIFA World Cups?", a:["Brazil","Germany","Argentina","Italy"], correct:0, diff:"easy" },
+      { q:"What color card is shown to send a player off the field?", a:["Red","Yellow","Orange","Black"], correct:0, diff:"easy" },
+      { q:"Who is known as 'The GOAT' in soccer and won 8 Ballon d'Or awards?", a:["Lionel Messi","Cristiano Ronaldo","Pelé","Zinedine Zidane"], correct:0, diff:"easy" },
+      { q:"Which club has won the most UEFA Champions League titles?", a:["Real Madrid","FC Barcelona","Bayern Munich","AC Milan"], correct:0, diff:"medium" },
+      { q:"What is a 'hat trick' in soccer?", a:["3 goals by one player","A penalty kick","A header goal","Two goals in a row"], correct:0, diff:"medium" },
+      { q:"Which country hosted the 2022 FIFA World Cup?", a:["Qatar","Saudi Arabia","UAE","Bahrain"], correct:0, diff:"medium" },
+      { q:"What is the term when a player is in an illegal position near the opponent's goal?", a:["Offside","Foul","Handball","Encroachment"], correct:0, diff:"medium" },
+      { q:"Who won the Golden Boot at the 2022 World Cup?", a:["Kylian Mbappé","Lionel Messi","Olivier Giroud","Richarlison"], correct:0, diff:"medium" },
+      { q:"How many World Cup goals did Miroslav Klose score — the all-time record?", a:["16","15","14","17"], correct:0, diff:"hard" },
+      { q:"What year did the Premier League begin?", a:["1992","1990","1988","1995"], correct:0, diff:"hard" },
+      { q:"Which goalkeeper holds the record for most clean sheets in Premier League history?", a:["Petr Cech","Edwin van der Sar","David James","Mark Schwarzer"], correct:0, diff:"hard" },
+      { q:"Who scored the 'Hand of God' goal in the 1986 World Cup?", a:["Diego Maradona","Pelé","Roberto Baggio","Johan Cruyff"], correct:0, diff:"hard" },
+      { q:"Which team won the first ever FIFA World Cup in 1930?", a:["Uruguay","Brazil","Argentina","Italy"], correct:0, diff:"hard" },
+    ]
+  };
+
+  const TIME_LIMITS = { easy: 20, medium: 15, hard: 10 };
+  const SCORE_MULT  = { easy: 10, medium: 15, hard: 25 };
+
+  let state = {
+    sport: 'all', diff: 'medium',
+    questions: [], current: 0,
+    score: 0, streak: 0, bestStreak: 0, correct: 0,
+    timer: null, timeLeft: 0, answered: false, dots: []
+  };
+
+  function shuffle(arr) { return [...arr].sort(() => Math.random() - .5); }
+
+  function buildQuestions() {
+    let pool = [];
+    const sports = state.sport === 'all' ? ['basketball','football','soccer'] : [state.sport];
+    sports.forEach(s => pool.push(...QUESTIONS[s].filter(q => q.diff === state.diff)));
+    return shuffle(pool).slice(0, 10);
+  }
+
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  // ── Sport & difficulty selectors ──
+  document.querySelectorAll('.sport-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sport-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      state.sport = btn.dataset.sport;
+    });
+  });
+  document.querySelectorAll('.diff-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      state.diff = btn.dataset.diff;
+    });
+  });
+
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('playAgain').addEventListener('click', () => show('startScreen'));
+
+  function startGame() {
+    state.questions  = buildQuestions();
+    state.current    = 0;
+    state.score      = 0;
+    state.streak     = 0;
+    state.bestStreak = 0;
+    state.correct    = 0;
+    state.dots       = [];
+
+    const dotContainer = document.getElementById('progressDots');
+    dotContainer.innerHTML = '';
+    for (let i = 0; i < 10; i++) {
+      const d = document.createElement('div');
+      d.className = 'dot';
+      dotContainer.appendChild(d);
+      state.dots.push(d);
+    }
+    show('gameScreen');
+    loadQuestion();
+  }
+
+  function detectSport(q) {
+    const txt = q.q.toLowerCase();
+    if (txt.includes('basket') || txt.includes('nba') || txt.includes('dunk') || txt.includes('three-point')) return 'basketball';
+    if (txt.includes('football') || txt.includes('nfl') || txt.includes('touchdown') || txt.includes('super bowl')) return 'football';
+    return 'soccer';
+  }
+
+  function loadQuestion() {
+    state.answered = false;
+    const q = state.questions[state.current];
+    document.getElementById('feedback').textContent = '';
+    document.getElementById('feedback').className   = 'feedback';
+    document.getElementById('streakBadge').style.display = 'none';
+
+    const sport = detectSport(q);
+    const sportMap = { basketball:'🏀 Basketball', football:'🏈 Football', soccer:'⚽ Soccer' };
+    const badge = document.getElementById('sportBadge');
+    badge.textContent = sportMap[sport];
+    badge.className   = 'sport-badge badge-' + sport;
+
+    document.getElementById('qText').textContent    = q.q;
+    document.getElementById('qNumVal').textContent  = `${state.current + 1}/10`;
+    document.getElementById('scoreVal').textContent  = state.score;
+    document.getElementById('streakVal').textContent = state.streak;
+
+    const grid = document.getElementById('answersGrid');
+    grid.innerHTML = '';
+    shuffle([0, 1, 2, 3]).forEach(i => {
+      const btn = document.createElement('button');
+      btn.className   = 'ans-btn';
+      btn.textContent = q.a[i];
+      btn.addEventListener('click', () => selectAnswer(i, btn));
+      grid.appendChild(btn);
+    });
+
+    clearInterval(state.timer);
+    state.timeLeft = TIME_LIMITS[state.diff];
+    updateTimerBar();
+    state.timer = setInterval(() => {
+      state.timeLeft--;
+      updateTimerBar();
+      if (state.timeLeft <= 0) { clearInterval(state.timer); timeUp(); }
+    }, 1000);
+  }
+
+  function updateTimerBar() {
+    const pct = (state.timeLeft / TIME_LIMITS[state.diff]) * 100;
+    const bar  = document.getElementById('timerBar');
+    bar.style.width      = pct + '%';
+    bar.style.background = pct > 50 ? '#2ecc71' : pct > 25 ? '#f7c948' : '#e63946';
+  }
+
+  function selectAnswer(idx, btn) {
+    if (state.answered) return;
+    state.answered = true;
+    clearInterval(state.timer);
+
+    const q       = state.questions[state.current];
+    const allBtns = document.querySelectorAll('.ans-btn');
+
+    allBtns.forEach(b => {
+      b.disabled = true;
+      if (b.textContent === q.a[q.correct]) b.classList.add('correct');
+    });
+
+    if (idx === q.correct) {
+      btn.classList.add('correct');
+      state.correct++;
+      state.streak++;
+      if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+      const bonus = Math.floor(SCORE_MULT[state.diff] * (1 + state.timeLeft / TIME_LIMITS[state.diff]));
+      state.score += bonus;
+      document.getElementById('feedback').textContent = getCorrectMsg();
+      document.getElementById('feedback').className   = 'feedback correct';
+      document.getElementById('scoreVal').textContent  = state.score;
+      document.getElementById('streakVal').textContent = state.streak;
+      state.dots[state.current].classList.add('correct');
+      if (state.streak >= 3) {
+        const sb = document.getElementById('streakBadge');
+        sb.textContent    = `🔥 ${state.streak} STREAK! +${bonus} pts`;
+        sb.style.display  = 'inline-block';
+      }
+    } else {
+      btn.classList.add('wrong');
+      state.streak = 0;
+      document.getElementById('streakVal').textContent = 0;
+      document.getElementById('feedback').textContent  = `❌ The answer was: ${q.a[q.correct]}`;
+      document.getElementById('feedback').className    = 'feedback wrong';
+      state.dots[state.current].classList.add('wrong');
+    }
+
+    setTimeout(() => {
+      state.current++;
+      state.current < 10 ? loadQuestion() : showEnd();
+    }, 1800);
+  }
+
+  function timeUp() {
+    if (state.answered) return;
+    state.answered = true;
+    state.streak   = 0;
+    document.getElementById('streakVal').textContent = 0;
+    const q = state.questions[state.current];
+    document.querySelectorAll('.ans-btn').forEach(b => {
+      b.disabled = true;
+      if (b.textContent === q.a[q.correct]) b.classList.add('correct');
+    });
+    document.getElementById('feedback').textContent = `⏰ Time's up! Answer: ${q.a[q.correct]}`;
+    document.getElementById('feedback').className   = 'feedback wrong';
+    state.dots[state.current].classList.add('wrong');
+    setTimeout(() => {
+      state.current++;
+      state.current < 10 ? loadQuestion() : showEnd();
+    }, 1800);
+  }
+
+  function getCorrectMsg() {
+    const msgs = ['🎯 Nailed it!','🔥 That\'s right!','💪 You know your stuff!','⚡ Correct!','🏆 Boom!','🎉 Let\'s go!','😤 Too easy!'];
+    return msgs[Math.floor(Math.random() * msgs.length)];
+  }
+
+  function showEnd() {
+    const pct = Math.round((state.correct / 10) * 100);
+    let trophy, msg;
+    if      (pct === 100) { trophy='🥇'; msg="PERFECT SCORE! You're an absolute sports genius! Even with a broken arm you're crushing it! 🔥"; }
+    else if (pct >= 80)   { trophy='🏆'; msg="Amazing job! You really know your sports. Most people can't get that many right!"; }
+    else if (pct >= 60)   { trophy='🥈'; msg="Solid performance! You've got some serious sports knowledge. Keep it up!"; }
+    else if (pct >= 40)   { trophy='🥉'; msg="Not bad! Some tough questions in there. Try again and beat your score!"; }
+    else                  { trophy='💪'; msg="Sports trivia is tough! Try easier difficulty or a specific sport you know best!"; }
+
+    document.getElementById('trophyEmoji').textContent  = trophy;
+    document.getElementById('finalScore').textContent   = state.score;
+    document.getElementById('statCorrect').textContent  = `${state.correct}/10`;
+    document.getElementById('statStreak').textContent   = state.bestStreak;
+    document.getElementById('statAccuracy').textContent = pct + '%';
+    document.getElementById('finalMsg').textContent     = msg;
+
+    setTimeout(() => { document.getElementById('gradeFill').style.width = pct + '%'; }, 300);
+    show('endScreen');
+  }
+</script>
+</body>
+</html>
